@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import main.java.com.shri.loan_management_system.user.Role;
+import com.shri.loan_management_system.user.Role;
 
 
 import java.time.LocalDateTime;

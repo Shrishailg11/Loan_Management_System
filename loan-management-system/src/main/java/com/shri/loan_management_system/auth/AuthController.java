@@ -1,5 +1,7 @@
 package com.shri.loan_management_system.auth;
 
+import com.shri.loan_management_system.auth.dto.LoginRequest;
+import com.shri.loan_management_system.auth.dto.LoginResponse;
 import com.shri.loan_management_system.auth.dto.RegisterRequest;
 import com.shri.loan_management_system.auth.dto.RegisterResponse;
 import jakarta.validation.Valid;
@@ -21,5 +23,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerCustomer(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }

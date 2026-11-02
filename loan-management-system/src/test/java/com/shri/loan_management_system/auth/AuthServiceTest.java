@@ -1,5 +1,7 @@
 package com.shri.loan_management_system.auth;
 
+import com.shri.loan_management_system.auth.dto.LoginRequest;
+import com.shri.loan_management_system.auth.dto.LoginResponse;
 import com.shri.loan_management_system.auth.dto.RegisterRequest;
 import com.shri.loan_management_system.auth.dto.RegisterResponse;
 import com.shri.loan_management_system.common.exception.BusinessRuleException;
@@ -15,10 +17,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +37,7 @@ class AuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock CustomerRepository customerRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock JwtService jwtService;
     @InjectMocks AuthService authService;
 
     private RegisterRequest request(LocalDate dob) {
@@ -69,5 +74,34 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.registerCustomer(request(LocalDate.now().minusYears(17))))
                 .isInstanceOf(BusinessRuleException.class);
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void loginReturnsTokenForValidCredentials() {
+        User user = new User();
+        user.setEmail("asha@mail.com");
+        user.setPasswordHash("HASHED");
+        user.setRole(Role.CUSTOMER);
+        when(userRepository.findByEmail("asha@mail.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Secret@123", "HASHED")).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("TOKEN");
+        when(jwtService.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.login(new LoginRequest("Asha@Mail.com", "Secret@123"));
+
+        assertThat(response.accessToken()).isEqualTo("TOKEN");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void loginFailsForWrongPassword() {
+        User user = new User();
+        user.setPasswordHash("HASHED");
+        when(userRepository.findByEmail("asha@mail.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "HASHED")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("asha@mail.com", "wrong")))
+                .isInstanceOf(BadCredentialsException.class);
+        verify(jwtService, never()).generateToken(any());
     }
 }

@@ -1,5 +1,7 @@
 package com.shri.loan_management_system.auth;
 
+import com.shri.loan_management_system.auth.dto.LoginRequest;
+import com.shri.loan_management_system.auth.dto.LoginResponse;
 import com.shri.loan_management_system.auth.dto.RegisterRequest;
 import com.shri.loan_management_system.auth.dto.RegisterResponse;
 import com.shri.loan_management_system.common.exception.BusinessRuleException;
@@ -10,6 +12,7 @@ import com.shri.loan_management_system.user.Role;
 import com.shri.loan_management_system.user.User;
 import com.shri.loan_management_system.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final JwtService jwtService;
 
     @Transactional
     public RegisterResponse registerCustomer(RegisterRequest request) {
@@ -59,5 +64,20 @@ public class AuthService {
 
         return new RegisterResponse(user.getId(), customer.getId(),
                 user.getName(), user.getEmail(), user.getRole());
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        String email = request.email().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+        boolean passwordMatches = passwordEncoder.matches(request.password(), user.getPasswordHash());
+        if (!passwordMatches || !user.isEnabled()) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        String token = jwtService.generateToken(user);
+        return new LoginResponse(token, "Bearer", jwtService.getExpirationSeconds(), user.getRole());
     }
 }

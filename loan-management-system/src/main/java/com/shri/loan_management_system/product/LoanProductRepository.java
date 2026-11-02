@@ -9,4 +9,6 @@ public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> 
     List<LoanProduct> findByActiveTrue();
 
     boolean existsByName(String name);
+
+    boolean existsByNameAndIdNot(String name, Long id);
 }

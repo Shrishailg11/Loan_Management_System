@@ -18,6 +18,7 @@ import java.util.List;
 public class LoanApprovalController {
 
     private final LoanApprovalService approvalService;
+    private final LoanDisbursementService disbursementService;
 
     @GetMapping("/pending")
     public List<LoanResponse> pending() {
@@ -36,5 +37,10 @@ public class LoanApprovalController {
                                @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         return approvalService.reject(id, userId, request.reason());
+    }
+
+    @PostMapping("/{id}/disburse")
+    public LoanResponse disburse(@PathVariable Long id) {
+        return disbursementService.disburse(id);
     }
 }

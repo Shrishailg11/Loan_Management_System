@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import main.java.com.shri.loan_management_system.loan.LoanStatus;
+import com.shri.loan_management_system.loan.LoanStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

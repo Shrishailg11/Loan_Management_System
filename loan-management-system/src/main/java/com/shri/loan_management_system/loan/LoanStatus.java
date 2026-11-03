@@ -1,4 +1,4 @@
-package main.java.com.shri.loan_management_system.loan;
+package com.shri.loan_management_system.loan;
 
 public enum LoanStatus {
     PENDING,

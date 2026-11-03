@@ -17,12 +17,13 @@ public record LoanResponse(
         LoanStatus status,
         LocalDateTime appliedAt,
         LocalDateTime decidedAt,
-        LocalDateTime disbursedAt
+        LocalDateTime disbursedAt,
+        String rejectionReason
 ) {
     public static LoanResponse from(Loan loan) {
         return new LoanResponse(loan.getId(), loan.getLoanNo(), loan.getProduct().getName(),
                 loan.getPrincipal(), loan.getTenureMonths(), loan.getInterestRate(),
                 loan.getEmiAmount(), loan.getStatus(), loan.getAppliedAt(),
-                loan.getDecidedAt(), loan.getDisbursedAt());
+                loan.getDecidedAt(), loan.getDisbursedAt(), loan.getRejectionReason());
     }
 }

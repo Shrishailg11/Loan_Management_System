@@ -66,4 +66,7 @@ public class Loan {
 
     @Column(name = "disbursed_at")
     private LocalDateTime disbursedAt;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
 }

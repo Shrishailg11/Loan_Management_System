@@ -80,19 +80,37 @@ public class LoanService {
         return LoanResponse.from(findAccessibleLoan(loanId, userId, role));
     }
 
+//    @Transactional(readOnly = true)
+//    public Loan findAccessibleLoan(Long loanId, Long userId, Role role) {
+//        Loan loan = loanRepository.findById(loanId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Loan", loanId));
+//
+//        boolean isStaff = role == Role.LOAN_OFFICER || role == Role.ADMIN;
+//        boolean isOwner = loan.getCustomer().getUser().getId().equals(userId);
+//
+//        if (!isStaff && !isOwner) {
+//            // 404 rather than 403, so we do not reveal that this loan id exists
+//            throw new ResourceNotFoundException("Loan", loanId);
+//        }
+//        return loan;
+//    }
+
     @Transactional(readOnly = true)
     public Loan findAccessibleLoan(Long loanId, Long userId, Role role) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan", loanId));
+        checkAccess(loan, userId, role);
+        return loan;
+    }
 
+    public void checkAccess(Loan loan, Long userId, Role role) {
         boolean isStaff = role == Role.LOAN_OFFICER || role == Role.ADMIN;
         boolean isOwner = loan.getCustomer().getUser().getId().equals(userId);
 
         if (!isStaff && !isOwner) {
             // 404 rather than 403, so we do not reveal that this loan id exists
-            throw new ResourceNotFoundException("Loan", loanId);
+            throw new ResourceNotFoundException("Loan", loan.getId());
         }
-        return loan;
     }
 
     private Customer findCustomer(Long userId) {

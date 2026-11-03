@@ -15,4 +15,6 @@ public interface RepaymentScheduleRepository extends JpaRepository<RepaymentSche
 
     // overdue = due before today and still unpaid
     List<RepaymentSchedule> findByDueDateBeforeAndPaidAtIsNull(LocalDate date);
+
+    long countByLoanIdAndPaidAtIsNull(Long loanId);
 }

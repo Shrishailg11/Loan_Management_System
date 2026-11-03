@@ -2,6 +2,7 @@ package com.shri.loan_management_system.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -78,5 +79,12 @@ public class GlobalExceptionHandler {
                                                             HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "You do not have permission to perform this action",
                 request, Map.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleIntegrity(DataIntegrityViolationException ex,
+                                                         HttpServletRequest request) {
+        log.warn("Data integrity violation on {}", request.getRequestURI(), ex);
+        return build(HttpStatus.CONFLICT, "The request conflicts with existing data", request, Map.of());
     }
 }

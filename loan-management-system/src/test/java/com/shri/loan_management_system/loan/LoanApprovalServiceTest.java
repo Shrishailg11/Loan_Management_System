@@ -14,6 +14,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.shri.loan_management_system.customer.Customer;
+import com.shri.loan_management_system.notification.LoanDecisionEvent;
+import com.shri.loan_management_system.user.User;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.springframework.context.ApplicationEventPublisher;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -27,6 +38,9 @@ class LoanApprovalServiceTest {
     @Mock LoanRepository loanRepository;
     @Mock LoanOfficerRepository loanOfficerRepository;
     @InjectMocks LoanApprovalService service;
+
+    @Mock ApplicationEventPublisher eventPublisher;
+    @Captor ArgumentCaptor<LoanDecisionEvent> eventCaptor;
 
     private LoanOfficer officer;
     private Loan loan;
@@ -46,6 +60,15 @@ class LoanApprovalServiceTest {
         loan.setProduct(product);
         loan.setPrincipal(new BigDecimal("200000"));
         loan.setTenureMonths(24);          // status defaults to PENDING
+
+        loan.setLoanNo("LN20261103000001");
+
+        User user = new User();
+        user.setName("Asha Rao");
+        user.setEmail("asha@mail.com");
+        Customer customer = new Customer();
+        customer.setUser(user);
+        loan.setCustomer(customer);
     }
 
     private void givenOfficerAndLoan() {
@@ -123,5 +146,42 @@ class LoanApprovalServiceTest {
 
         assertThatThrownBy(() -> service.approve(7L, 30L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void approvalPublishesEventWithAgreedTerms() {
+        givenOfficerAndLoan();
+
+        service.approve(7L, 30L);
+
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        LoanDecisionEvent event = eventCaptor.getValue();
+        assertThat(event.decision()).isEqualTo(LoanStatus.APPROVED);
+        assertThat(event.customerEmail()).isEqualTo("asha@mail.com");
+        assertThat(event.interestRate()).isEqualByComparingTo("12.00");
+        assertThat(event.emiAmount()).isNotNull();
+    }
+
+    @Test
+    void rejectionPublishesEventWithReason() {
+        givenOfficerAndLoan();
+
+        service.reject(7L, 30L, "Income documents missing");
+
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        LoanDecisionEvent event = eventCaptor.getValue();
+        assertThat(event.decision()).isEqualTo(LoanStatus.REJECTED);
+        assertThat(event.rejectionReason()).isEqualTo("Income documents missing");
+    }
+
+    @Test
+    void noEventIsPublishedWhenApprovalFails() {
+        loan.setPrincipal(new BigDecimal("600000"));     // above the officer's limit
+        givenOfficerAndLoan();
+
+        assertThatThrownBy(() -> service.approve(7L, 30L))
+                .isInstanceOf(BusinessRuleException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }

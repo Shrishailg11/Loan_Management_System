@@ -3,10 +3,13 @@ package com.shri.loan_management_system.loan;
 import com.shri.loan_management_system.common.exception.BusinessRuleException;
 import com.shri.loan_management_system.common.exception.ResourceNotFoundException;
 import com.shri.loan_management_system.loan.dto.LoanResponse;
+import com.shri.loan_management_system.notification.LoanDecisionEvent;
 import com.shri.loan_management_system.officer.LoanOfficer;
 import com.shri.loan_management_system.officer.LoanOfficerRepository;
 import com.shri.loan_management_system.schedule.EmiCalculator;
+import com.shri.loan_management_system.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ public class LoanApprovalService {
 
     private final LoanRepository loanRepository;
     private final LoanOfficerRepository loanOfficerRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<LoanResponse> listPending() {
@@ -47,6 +51,8 @@ public class LoanApprovalService {
         loan.setApprovedBy(officer);
         loan.setDecidedAt(LocalDateTime.now());
 
+        eventPublisher.publishEvent(decisionEvent(loan));
+
         return LoanResponse.from(loan);
     }
 
@@ -61,7 +67,17 @@ public class LoanApprovalService {
         loan.setRejectionReason(reason.trim());
         loan.setDecidedAt(LocalDateTime.now());
 
+        eventPublisher.publishEvent(decisionEvent(loan));
+
         return LoanResponse.from(loan);
+    }
+
+    private LoanDecisionEvent decisionEvent(Loan loan) {
+        User user = loan.getCustomer().getUser();
+        return new LoanDecisionEvent(user.getEmail(), user.getName(), loan.getLoanNo(),
+                loan.getProduct().getName(), loan.getPrincipal(), loan.getTenureMonths(),
+                loan.getStatus(), loan.getInterestRate(), loan.getEmiAmount(),
+                loan.getRejectionReason());
     }
 
     private LoanOfficer findOfficer(Long userId) {
